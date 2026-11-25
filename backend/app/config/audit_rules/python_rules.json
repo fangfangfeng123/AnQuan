@@ -1,0 +1,159 @@
+{
+  "language": "python",
+  "framework": ["flask", "django", "fastapi", "generic"],
+  "rules": [
+    {
+      "id": "py-sqli-string-concat",
+      "vuln_type": "sql_injection",
+      "cwe": "CWE-89",
+      "owasp": "A03:2021",
+      "severity": "high",
+      "description": "SQL 注入：用户输入通过字符串拼接进入 SQL 查询",
+      "source_patterns": [
+        "request.args.get",
+        "request.form.get",
+        "request.json.get",
+        "request.values.get",
+        "request.get_json",
+        "input(",
+        "sys.argv"
+      ],
+      "sink_patterns": [
+        "cursor.execute(",
+        ".execute(",
+        "db.session.execute(",
+        "engine.execute(",
+        "text("
+      ],
+      "sanitizer_patterns": [
+        "parametrize",
+        "execute(%s",
+        "execute(?,",
+        "bindparam",
+        "quote(",
+        "escape("
+      ]
+    },
+    {
+      "id": "py-cmd-injection",
+      "vuln_type": "command_injection",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "severity": "critical",
+      "description": "命令注入：用户输入直接进入系统命令执行",
+      "source_patterns": [
+        "request.args.get",
+        "request.form.get",
+        "request.json.get",
+        "request.values.get",
+        "input(",
+        "sys.argv",
+        "os.environ.get"
+      ],
+      "sink_patterns": [
+        "os.system(",
+        "subprocess.call(",
+        "subprocess.run(",
+        "subprocess.Popen(",
+        "os.popen(",
+        "commands.getoutput("
+      ],
+      "sanitizer_patterns": [
+        "shlex.quote(",
+        "shlex.split(",
+        "shell=False",
+        "check=True",
+        "args=[",
+        "argv=["
+      ]
+    },
+    {
+      "id": "py-file-upload",
+      "vuln_type": "file_upload",
+      "cwe": "CWE-434",
+      "owasp": "A04:2021",
+      "severity": "high",
+      "description": "文件上传漏洞：未校验文件类型直接保存",
+      "source_patterns": [
+        "request.files",
+        "request.files.get",
+        "FileStorage(",
+        "save("
+      ],
+      "sink_patterns": [
+        ".save(",
+        "open(",
+        "shutil.copy(",
+        "os.rename("
+      ],
+      "sanitizer_patterns": [
+        "allowed_file(",
+        "secure_filename(",
+        "filename.rsplit",
+        "os.path.splitext",
+        ".endswith(",
+        "mimetype"
+      ]
+    },
+    {
+      "id": "py-idor",
+      "vuln_type": "broken_access",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "severity": "medium",
+      "description": "越权访问 IDOR：接口根据用户可控 ID 直接查数据缺少归属校验",
+      "source_patterns": [
+        "request.args.get",
+        "request.form.get",
+        "request.json.get",
+        "request.view_args"
+      ],
+      "sink_patterns": [
+        ".query.get(",
+        ".query.filter_by(",
+        ".filter(",
+        ".get_or_404(",
+        "objects.get(",
+        "Model.query"
+      ],
+      "sanitizer_patterns": [
+        "current_user",
+        "owner_id",
+        "user_id ==",
+        "filter_by(user_id",
+        "@login_required",
+        "@permission_required"
+      ]
+    },
+    {
+      "id": "py-hardcoded-secrets",
+      "vuln_type": "sensitive_data",
+      "cwe": "CWE-798",
+      "owasp": "A02:2021",
+      "severity": "medium",
+      "description": "敏感信息泄露：硬编码密钥、数据库密码或 Token",
+      "source_patterns": [],
+      "sink_patterns": [
+        "SECRET_KEY =",
+        "SECRET_KEY=",
+        "API_KEY =",
+        "API_KEY=",
+        "PASSWORD =",
+        "PASSWORD=",
+        "TOKEN =",
+        "TOKEN=",
+        "SECRET =",
+        "secret_key =",
+        "password =",
+        "api_key ="
+      ],
+      "sanitizer_patterns": [
+        "os.environ",
+        "os.getenv",
+        "config.get",
+        "settings.",
+        "Config."
+      ]
+    }
+  ]
+}

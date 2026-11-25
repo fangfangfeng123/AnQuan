@@ -1,0 +1,195 @@
+# 安全评估报告
+
+> **项目**: {{ sections.executive_summary.project_name }}
+> **任务 ID**: {{ sections.executive_summary.task_id }}
+> **生成时间**: {{ generated_at | time_zh }}
+> **整体风险等级**: {{ sections.executive_summary.overall_risk | risk_zh }}
+> **最高风险评分**: {{ sections.executive_summary.max_cvss or '无' }}
+
+---
+
+## §1 执行摘要
+
+{{ sections.executive_summary.summary_text }}
+
+| 指标 | 数值 |
+|------|------|
+| 漏洞总数 | {{ sections.executive_summary.total_findings }} |
+| 严重 | {{ sections.executive_summary.critical_count }} |
+| 高危 | {{ sections.executive_summary.high_count }} |
+| 中危 | {{ sections.executive_summary.medium_count }} |
+| 低危 | {{ sections.executive_summary.low_count }} |
+| 信息 | {{ sections.executive_summary.info_count }} |
+| 攻击链数 | {{ sections.executive_summary.total_chains }} |
+| 多步攻击链 | {{ sections.executive_summary.multi_step_chains }} |
+
+---
+
+## §2 评估范围
+
+| 项目 | 值 |
+|------|-----|
+| 项目名称 | {{ sections.scope.project_name }} |
+| 项目 ID | {{ sections.scope.project_id }} |
+| 任务 ID | {{ sections.scope.task_id }} |
+| 源码来源 | {{ sections.scope.source_type | source_type_zh }} |
+| 源码路径 | {{ sections.scope.source_input }} |
+| 主语言 | {{ sections.scope.language | language_zh }} |
+| 主框架 | {{ sections.scope.framework | framework_zh }} |
+| 启动命令 | {{ sections.scope.run_command if sections.scope.run_command else '未识别' }} |
+
+{% if sections.scope.dependencies %}
+### 依赖清单
+
+| 依赖名称 | 版本 |
+|----------|------|
+{% for name, version in sections.scope.dependencies.items() %}
+| {{ name }} | {{ version }} |
+{% endfor %}
+{% endif %}
+
+{% if sections.scope.service_ports %}
+### 服务端口
+
+| 端口 | 协议 | 说明 |
+|------|------|------|
+{% for port in sections.scope.service_ports %}
+| {{ port.port }} | {{ port.protocol | protocol_zh }} | {{ port.description }} |
+{% endfor %}
+{% endif %}
+
+---
+
+## §3 漏洞详情
+
+{% if not sections.findings %}
+本次评估未发现漏洞。
+{% else %}
+{% for f in sections.findings %}
+### {{ loop.index }}. {{ f.vuln_type | vuln_type_zh }} - {{ f.severity | severity_zh }}
+
+| 属性 | 值 |
+|------|-----|
+| 漏洞 ID | `{{ f.id }}` |
+| 弱点编号 | {{ f.cwe_id or '无' }} |
+| 风险类别 | {{ f.owasp or '无' }} |
+| 风险评分 | {{ f.cvss_score or '无' }} ({{ f.cvss_vector or '无' }}) |
+| 状态 | {{ f.status | status_zh }} |
+| 置信度 | {{ f.confidence }} |
+| 检测方式 | {{ f.detected_by | detected_by_zh }} |
+
+**触发位置**: `{{ f.file_path }}:{{ f.line_start }}-{{ f.line_end }}`
+
+{% if f.snippet %}
+```python
+{{ f.snippet }}
+```
+{% endif %}
+
+{% if f.taint_path %}
+### 污点传播路径
+
+| 步骤 | 文件 | 行号 | 代码 |
+|------|------|------|------|
+{% for step in f.taint_path %}
+| {{ loop.index }} | {{ step.file or step.file_path or '无' }} | {{ step.line or '无' }} | `{{ step.code or step.snippet or '无' }}` |
+{% endfor %}
+{% endif %}
+
+{% if f.patch %}
+### AI 修复补丁
+
+- **状态**: {{ f.patch.adopt_status | patch_status_zh }}
+- **校验**: {{ '通过' if f.patch.validated else '未通过' }}
+- **说明**: {{ f.patch.description or '无' }}
+
+```diff
+{{ f.patch.diff_content }}
+```
+{% endif %}
+
+{% if f.remediation %}
+**修复建议**: {{ f.remediation }}
+{% endif %}
+
+---
+
+{% endfor %}
+{% endif %}
+
+## §4 攻击链分析
+
+{% if not sections.attack_chains %}
+本次评估未发现可组合的多步攻击路径。
+{% else %}
+{% for chain in sections.attack_chains %}
+### 攻击链 {{ loop.index }}: {{ chain.name }}
+
+| 属性 | 值 |
+|------|-----|
+| 组合风险 | {{ chain.overall_severity | risk_zh }} |
+| 组合风险评分 | {{ chain.overall_cvss or '无' }} |
+| 节点数 | {{ chain.node_count }} |
+| 边数 | {{ chain.edge_count }} |
+| 类型 | {{ '单节点链' if chain.is_single_node else '多步攻击链' }} |
+| 最终影响 | {{ chain.final_impact or '无' }} |
+
+#### 攻击步骤
+
+| 步骤 | 节点 | 漏洞类型 | 前置条件 | 后置能力 | 权限变化 |
+|------|------|----------|----------|----------|----------|
+{% for node in chain.nodes %}
+| {{ loop.index }} | {{ node.label }} | {{ node.vuln_type | vuln_type_zh }} | {{ node.precondition or '无' }} | {{ node.post_capability or '无' }} | {{ node.privilege_level | privilege_zh }} |
+{% endfor %}
+
+{% if chain.edges %}
+#### 串联关系
+
+| 步骤 | 源 -> 目标 | 条件 | 动作 | 权限跃迁 |
+|------|-----------|------|------|----------|
+{% for edge in chain.edges %}
+| {{ edge.step }} | {{ edge.source_node_id }} -> {{ edge.target_node_id }} | {{ edge.condition or '无' }} | {{ edge.action or '无' }} | {{ edge.privilege_escalation or '无' }} |
+{% endfor %}
+{% endif %}
+
+---
+
+{% endfor %}
+{% endif %}
+
+## §5 修复建议汇总
+
+{% if not sections.remediation %}
+无需修复项。
+{% else %}
+| 优先级 | 漏洞类型 | 严重等级 | 风险评分 | 文件 | 行号 | 补丁状态 | 修复说明 |
+|--------|----------|----------|------|------|------|----------|----------|
+{% for r in sections.remediation %}
+| {{ loop.index }} | {{ r.vuln_type | vuln_type_zh }} | {{ r.severity | severity_zh }} | {{ r.cvss_score or '无' }} | `{{ r.file_path }}` | {{ r.line_start }} | {{ r.patch_status | patch_status_zh }} | {{ r.remediation or r.patch_description or '无' }} |
+{% endfor %}
+{% endif %}
+
+---
+
+## 附录
+
+### 统计摘要
+
+| 统计项 | 值 |
+|--------|-----|
+| 漏洞类型分布 | {{ statistics.vuln_type_distribution | vuln_dist_zh }} |
+| 状态分布 | {{ statistics.status_distribution | status_dist_zh }} |
+| 攻击链统计 | 总 {{ statistics.total_chains }} 条, 单节点 {{ statistics.single_node_chains }}, 多步 {{ statistics.multi_step_chains }} |
+
+### 评估时间线
+
+| 节点 | 时间 |
+|------|------|
+| 任务创建 | {{ sections.scope.created_at | time_zh('未记录') }} |
+| 评估开始 | {{ sections.scope.started_at | time_zh('未开始') }} |
+| 评估完成 | {{ sections.scope.completed_at | time_zh('未完成') }} |
+| 报告生成 | {{ generated_at | time_zh }} |
+
+---
+
+*本报告由自动化安全评估系统生成*

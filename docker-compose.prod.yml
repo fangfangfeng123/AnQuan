@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sec_eval
+      POSTGRES_USER: sec_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: ["pg_data:/var/lib/postgresql/data"]
+    restart: always
+  redis:
+    image: redis:7-alpine
+    restart: always
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      LLM_MODE: openai
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: always
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    ports: ["80:80"]
+    depends_on:
+      backend: {condition: service_healthy}
+    restart: always
+  sandbox-runner:
+    image: docker:25-dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - sandbox_data:/var/lib/docker
+      - ./data:/data
+    restart: always
+volumes:
+  pg_data:
+  sandbox_data:
