@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>安全评估报告 - {{ sections.executive_summary.project_name }}</title>
+<style>
+  body {
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    color: #1a1a2e;
+    line-height: 1.6;
+  }
+  h1 {
+    color: #0f3460;
+    border-bottom: 3px solid #e94560;
+    padding-bottom: 10px;
+  }
+  h2 {
+    color: #16213e;
+    border-left: 4px solid #e94560;
+    padding-left: 12px;
+    margin-top: 40px;
+  }
+  h3 { color: #0f3460; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  th {
+    background: #0f3460;
+    color: #fff;
+  }
+  tr:nth-child(even) { background: #f8f9fa; }
+  code, pre {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  .diff-add { color: #4caf50; }
+  .diff-del { color: #f44336; }
+  .diff-meta { color: #2196f3; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #fff;
+  }
+  .badge-critical { background: #d32f2f; }
+  .badge-high { background: #f57c00; }
+  .badge-medium { background: #fbc02d; color: #333; }
+  .badge-low { background: #4caf50; }
+  .badge-info { background: #2196f3; }
+  .badge-secure { background: #4caf50; }
+  .summary-card {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .summary-card > div {
+    flex: 1;
+    min-width: 120px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-card .num {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0f3460;
+  }
+  .summary-card .label {
+    font-size: 12px;
+    color: #666;
+  }
+  blockquote {
+    border-left: 4px solid #e94560;
+    margin: 0;
+    padding: 8px 16px;
+    background: #fff5f5;
+  }
+  .footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #ddd;
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<h1>安全评估报告</h1>
+
+<blockquote>
+  <strong>项目</strong>: {{ sections.executive_summary.project_name }} |
+  <strong>任务 ID</strong>: {{ sections.executive_summary.task_id }}<br>
+  <strong>生成时间</strong>: {{ generated_at | time_zh }} |
+  <strong>整体风险</strong>:
+  <span class="badge badge-{{ sections.executive_summary.overall_risk }}">{{ sections.executive_summary.overall_risk | risk_zh }}</span>
+  <strong>最高风险评分</strong>: {{ sections.executive_summary.max_cvss or '无' }}
+</blockquote>
+
+<h2>§1 执行摘要</h2>
+
+<p>{{ sections.executive_summary.summary_text }}</p>
+
+<div class="summary-card">
+  <div><div class="num">{{ sections.executive_summary.total_findings }}</div><div class="label">漏洞总数</div></div>
+  <div><div class="num">{{ sections.executive_summary.critical_count }}</div><div class="label">严重</div></div>
+  <div><div class="num">{{ sections.executive_summary.high_count }}</div><div class="label">高危</div></div>
+  <div><div class="num">{{ sections.executive_summary.medium_count }}</div><div class="label">中危</div></div>
+  <div><div class="num">{{ sections.executive_summary.low_count }}</div><div class="label">低危</div></div>
+  <div><div class="num">{{ sections.executive_summary.total_chains }}</div><div class="label">攻击链</div></div>
+</div>
+
+<h2>§2 评估范围</h2>
+
+<table>
+  <tr><th>项目</th><th>值</th></tr>
+  <tr><td>项目名称</td><td>{{ sections.scope.project_name }}</td></tr>
+  <tr><td>项目 ID</td><td>{{ sections.scope.project_id }}</td></tr>
+  <tr><td>任务 ID</td><td>{{ sections.scope.task_id }}</td></tr>
+  <tr><td>源码来源</td><td>{{ sections.scope.source_type | source_type_zh }}</td></tr>
+  <tr><td>源码路径</td><td>{{ sections.scope.source_input }}</td></tr>
+  <tr><td>主语言</td><td>{{ sections.scope.language | language_zh }}</td></tr>
+  <tr><td>主框架</td><td>{{ sections.scope.framework | framework_zh }}</td></tr>
+  <tr><td>启动命令</td><td>{{ sections.scope.run_command if sections.scope.run_command else '未识别' }}</td></tr>
+</table>
+
+{% if sections.scope.dependencies %}
+<h3>依赖清单</h3>
+<table>
+  <tr><th>依赖名称</th><th>版本</th></tr>
+  {% for name, version in sections.scope.dependencies.items() %}
+  <tr><td>{{ name }}</td><td>{{ version }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if sections.scope.service_ports %}
+<h3>服务端口</h3>
+<table>
+  <tr><th>端口</th><th>协议</th><th>说明</th></tr>
+  {% for port in sections.scope.service_ports %}
+  <tr><td>{{ port.port }}</td><td>{{ port.protocol | protocol_zh }}</td><td>{{ port.description }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>§3 漏洞详情</h2>
+
+{% if not sections.findings %}
+<p>本次评估未发现漏洞。</p>
+{% else %}
+{% for f in sections.findings %}
+<h3>{{ loop.index }}. {{ f.vuln_type | vuln_type_zh }}
+  <span class="badge badge-{{ f.severity }}">{{ f.severity | severity_zh }}</span>
+</h3>
+
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>漏洞 ID</td><td><code>{{ f.id }}</code></td></tr>
+  <tr><td>弱点编号</td><td>{{ f.cwe_id or '无' }}</td></tr>
+  <tr><td>风险类别</td><td>{{ f.owasp or '无' }}</td></tr>
+  <tr><td>风险评分</td><td>{{ f.cvss_score or '无' }} ({{ f.cvss_vector or '无' }})</td></tr>
+  <tr><td>状态</td><td>{{ f.status | status_zh }}</td></tr>
+  <tr><td>检测方式</td><td>{{ f.detected_by | detected_by_zh }}</td></tr>
+  <tr><td>触发位置</td><td><code>{{ f.file_path }}:{{ f.line_start }}-{{ f.line_end }}</code></td></tr>
+</table>
+
+{% if f.snippet %}
+<pre>{{ f.snippet }}</pre>
+{% endif %}
+
+{% if f.taint_path %}
+<h4>污点传播路径</h4>
+<table>
+  <tr><th>步骤</th><th>文件</th><th>行号</th><th>代码</th></tr>
+  {% for step in f.taint_path %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ step.file or step.file_path or '无' }}</td>
+    <td>{{ step.line or '无' }}</td>
+    <td><code>{{ step.code or step.snippet or '无' }}</code></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if f.patch %}
+<h4>AI 修复补丁</h4>
+<p>
+  状态: {{ f.patch.adopt_status | patch_status_zh }} |
+  校验: {{ '通过' if f.patch.validated else '未通过' }} |
+  说明: {{ f.patch.description or '无' }}
+</p>
+<pre>{{ f.patch.diff_content }}</pre>
+{% endif %}
+
+{% if f.remediation %}
+<p><strong>修复建议</strong>: {{ f.remediation }}</p>
+{% endif %}
+
+<hr>
+{% endfor %}
+{% endif %}
+
+<h2>§4 攻击链分析</h2>
+
+{% if not sections.attack_chains %}
+<p>本次评估未发现可组合的多步攻击路径。</p>
+{% else %}
+{% for chain in sections.attack_chains %}
+<h3>攻击链 {{ loop.index }}: {{ chain.name }}</h3>
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>组合风险</td><td><span class="badge badge-{{ chain.overall_severity }}">{{ chain.overall_severity | risk_zh }}</span></td></tr>
+  <tr><td>组合风险评分</td><td>{{ chain.overall_cvss or '无' }}</td></tr>
+  <tr><td>节点数</td><td>{{ chain.node_count }}</td></tr>
+  <tr><td>边数</td><td>{{ chain.edge_count }}</td></tr>
+  <tr><td>类型</td><td>{{ '单节点链' if chain.is_single_node else '多步攻击链' }}</td></tr>
+  <tr><td>最终影响</td><td>{{ chain.final_impact or '无' }}</td></tr>
+</table>
+
+<h4>攻击步骤</h4>
+<table>
+  <tr><th>步骤</th><th>节点</th><th>漏洞类型</th><th>前置条件</th><th>后置能力</th><th>权限变化</th></tr>
+  {% for node in chain.nodes %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ node.label }}</td>
+    <td>{{ node.vuln_type | vuln_type_zh }}</td>
+    <td>{{ node.precondition or '无' }}</td>
+    <td>{{ node.post_capability or '无' }}</td>
+    <td>{{ node.privilege_level | privilege_zh }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% if chain.edges %}
+<h4>串联关系</h4>
+<table>
+  <tr><th>步骤</th><th>源 -> 目标</th><th>条件</th><th>动作</th><th>权限跃迁</th></tr>
+  {% for edge in chain.edges %}
+  <tr>
+    <td>{{ edge.step }}</td>
+    <td>{{ edge.source_node_id }} -> {{ edge.target_node_id }}</td>
+    <td>{{ edge.condition or '无' }}</td>
+    <td>{{ edge.action or '无' }}</td>
+    <td>{{ edge.privilege_escalation or '无' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<hr>
+{% endfor %}
+{% endif %}
+
+<h2>§5 修复建议汇总</h2>
+
+{% if not sections.remediation %}
+<p>无需修复项。</p>
+{% else %}
+<table>
+  <tr>
+    <th>优先级</th><th>漏洞类型</th><th>严重等级</th><th>风险评分</th>
+    <th>文件</th><th>行号</th><th>补丁状态</th><th>修复说明</th>
+  </tr>
+  {% for r in sections.remediation %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ r.vuln_type | vuln_type_zh }}</td>
+    <td><span class="badge badge-{{ r.severity }}">{{ r.severity | severity_zh }}</span></td>
+    <td>{{ r.cvss_score or '无' }}</td>
+    <td><code>{{ r.file_path }}</code></td>
+    <td>{{ r.line_start }}</td>
+    <td>{{ r.patch_status | patch_status_zh }}</td>
+    <td>{{ r.remediation or r.patch_description or '无' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>附录</h2>
+
+<h3>统计摘要</h3>
+<table>
+  <tr><th>统计项</th><th>值</th></tr>
+  <tr><td>漏洞类型分布</td><td>{{ statistics.vuln_type_distribution | vuln_dist_zh }}</td></tr>
+  <tr><td>状态分布</td><td>{{ statistics.status_distribution | status_dist_zh }}</td></tr>
+  <tr><td>攻击链统计</td><td>总 {{ statistics.total_chains }} 条, 单节点 {{ statistics.single_node_chains }}, 多步 {{ statistics.multi_step_chains }}</td></tr>
+</table>
+
+<h3>评估时间线</h3>
+<table>
+  <tr><th>节点</th><th>时间</th></tr>
+  <tr><td>任务创建</td><td>{{ sections.scope.created_at | time_zh('未记录') }}</td></tr>
+  <tr><td>评估开始</td><td>{{ sections.scope.started_at | time_zh('未开始') }}</td></tr>
+  <tr><td>评估完成</td><td>{{ sections.scope.completed_at | time_zh('未完成') }}</td></tr>
+  <tr><td>报告生成</td><td>{{ generated_at | time_zh }}</td></tr>
+</table>
+
+<div class="footer">
+  <p>本报告由自动化安全评估系统自动生成 | 生成时间: {{ generated_at | time_zh }}</p>
+</div>
+
+</body>
+</html>

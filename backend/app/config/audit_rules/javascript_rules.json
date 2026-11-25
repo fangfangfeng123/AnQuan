@@ -1,0 +1,87 @@
+{
+  "language": "javascript",
+  "framework": ["express", "generic"],
+  "rules": [
+    {
+      "id": "js-sqli-string-concat",
+      "vuln_type": "sql_injection",
+      "cwe": "CWE-89",
+      "owasp": "A03:2021",
+      "severity": "high",
+      "description": "SQL injection: user input concatenated into SQL query string",
+      "source_patterns": [
+        "req.query",
+        "req.body",
+        "req.params",
+        "req.headers"
+      ],
+      "sink_patterns": [
+        "db.query(",
+        "connection.query(",
+        "pool.query(",
+        ".execute(",
+        "sequelize.query("
+      ],
+      "sanitizer_patterns": [
+        "mysql.format(",
+        "sql.escape(",
+        "connection.escape(",
+        "parameterized",
+        "bindparam",
+        "values (?)",
+        "VALUES (?)"
+      ]
+    },
+    {
+      "id": "js-cmd-injection",
+      "vuln_type": "command_injection",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "severity": "critical",
+      "description": "Command injection: user input passed to child_process exec",
+      "source_patterns": [
+        "req.query",
+        "req.body",
+        "req.params"
+      ],
+      "sink_patterns": [
+        "exec(",
+        "execSync(",
+        "spawn(",
+        "spawnSync(",
+        "child_process.exec(",
+        "child_process.spawn("
+      ],
+      "sanitizer_patterns": [
+        "shelljs.escape(",
+        "sanitize(",
+        "shell: false",
+        "args: ["
+      ]
+    },
+    {
+      "id": "js-hardcoded-secrets",
+      "vuln_type": "sensitive_data",
+      "cwe": "CWE-798",
+      "owasp": "A02:2021",
+      "severity": "medium",
+      "description": "Hardcoded secrets: API keys, passwords, tokens in source code",
+      "source_patterns": [],
+      "sink_patterns": [
+        "API_KEY =",
+        "apiKey =",
+        "PASSWORD =",
+        "password =",
+        "SECRET =",
+        "secret =",
+        "TOKEN =",
+        "token ="
+      ],
+      "sanitizer_patterns": [
+        "process.env",
+        "dotenv",
+        "config.get("
+      ]
+    }
+  ]
+}

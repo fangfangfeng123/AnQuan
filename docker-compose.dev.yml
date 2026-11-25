@@ -1,0 +1,68 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sec_eval
+      POSTGRES_USER: sec_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sec_password}
+    ports: ["${POSTGRES_HOST_PORT:-5432}:5432"]
+    volumes: ["pg_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sec_user -d sec_eval"]
+      interval: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sec_user:${POSTGRES_PASSWORD:-sec_password}@postgres:5432/sec_eval
+      REDIS_URL: redis://redis:6379/0
+      DOCKER_HOST: tcp://sandbox-runner:2375
+      SANDBOX_IMAGE_DEFAULT: sec-eval/python-scanner:latest
+      SANDBOX_NETWORK_MODE: restricted
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    ports: ["5173:5173"]
+    volumes: ["./frontend/src:/app/src"]
+    depends_on:
+      backend: {condition: service_healthy}
+  sandbox-runner:
+    image: docker:25-dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - sandbox_data:/var/lib/docker
+      - ./data:/data
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    profiles: [dev]
+    ports: ["5050:80"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local
+      PGADMIN_DEFAULT_PASSWORD: admin
+volumes:
+  pg_data:
+  sandbox_data:

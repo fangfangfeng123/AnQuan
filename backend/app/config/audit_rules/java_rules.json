@@ -1,0 +1,84 @@
+{
+  "language": "java",
+  "framework": ["spring-boot", "generic"],
+  "rules": [
+    {
+      "id": "java-sqli-string-concat",
+      "vuln_type": "sql_injection",
+      "cwe": "CWE-89",
+      "owasp": "A03:2021",
+      "severity": "high",
+      "description": "SQL injection: user input concatenated into SQL query string",
+      "source_patterns": [
+        "request.getParameter(",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody"
+      ],
+      "sink_patterns": [
+        "Statement.execute(",
+        "createStatement(",
+        "prepareStatement(",
+        "jdbcTemplate.query(",
+        "jdbcTemplate.update("
+      ],
+      "sanitizer_patterns": [
+        "PreparedStatement",
+        "setString(",
+        "setInt(",
+        "bindParam",
+        "?"
+      ]
+    },
+    {
+      "id": "java-cmd-injection",
+      "vuln_type": "command_injection",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "severity": "critical",
+      "description": "Command injection: user input passed to Runtime.exec",
+      "source_patterns": [
+        "request.getParameter(",
+        "@RequestParam",
+        "@PathVariable"
+      ],
+      "sink_patterns": [
+        "Runtime.getRuntime().exec(",
+        "ProcessBuilder(",
+        "ProcessBuilder.command("
+      ],
+      "sanitizer_patterns": [
+        "sanitize(",
+        "escape(",
+        "command.add(",
+        "command = ["
+      ]
+    },
+    {
+      "id": "java-hardcoded-secrets",
+      "vuln_type": "sensitive_data",
+      "cwe": "CWE-798",
+      "owasp": "A02:2021",
+      "severity": "medium",
+      "description": "Hardcoded secrets in Java source code",
+      "source_patterns": [],
+      "sink_patterns": [
+        "API_KEY =",
+        "apiKey =",
+        "PASSWORD =",
+        "password =",
+        "SECRET =",
+        "secret =",
+        "TOKEN =",
+        "token ="
+      ],
+      "sanitizer_patterns": [
+        "System.getenv(",
+        "@Value(",
+        "getProperty(",
+        "application.properties",
+        "application.yml"
+      ]
+    }
+  ]
+}
